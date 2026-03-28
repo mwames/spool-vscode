@@ -4,15 +4,15 @@
   "description": "Requirements traceability navigation for Spool projects",
   "version": "0.1.0",
   "publisher": "mwames",
-  "license": "MIT",
+  "repository": {
+    "url": "https://github.com/mwames/spool-vscode"
+  },
+  "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "vscode": "^1.75.0"
   },
   "categories": [
     "Programming Languages"
-  ],
-  "activationEvents": [
-    "workspaceContains:.spool.yaml"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -40,6 +40,10 @@
     },
     "commands": [
       {
+        "command": "spool.init",
+        "title": "Spool: Init"
+      },
+      {
         "command": "spool.refreshTree",
         "title": "Spool: Refresh Requirements",
         "icon": "$(refresh)"
@@ -59,8 +63,8 @@
       "properties": {
         "spool.serverPath": {
           "type": "string",
-          "default": "/home/matt/repos/Spool/spool",
-          "description": "Path to the spool binary"
+          "default": "",
+          "description": "Path to the spool binary. Leave empty to use the bundled binary."
         }
       }
     }
@@ -68,7 +72,14 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "vsce package"
+    "vscode:prepublish": "npm run compile && bash build.sh",
+    "package": "vsce package",
+    "package:linux-x64": "bash build.sh linux amd64 && vsce package --target linux-x64",
+    "package:linux-arm64": "bash build.sh linux arm64 && vsce package --target linux-arm64",
+    "package:darwin-x64": "bash build.sh darwin amd64 && vsce package --target darwin-x64",
+    "package:darwin-arm64": "bash build.sh darwin arm64 && vsce package --target darwin-arm64",
+    "package:win32-x64": "bash build.sh windows amd64 && vsce package --target win32-x64",
+    "package:all": "npm run package:linux-x64 && npm run package:linux-arm64 && npm run package:darwin-x64 && npm run package:darwin-arm64 && npm run package:win32-x64"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"

@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 import {
 	LanguageClient,
@@ -5,6 +6,7 @@ import {
 	ServerOptions,
 } from 'vscode-languageclient/node';
 import { SpoolTreeDataProvider } from './treeView';
+import { scaffoldProject } from './scaffold';
 
 let client: LanguageClient | undefined;
 
@@ -13,7 +15,13 @@ export function activate(context: vscode.ExtensionContext): void {
 	outputChannel.appendLine('Spool extension activating...');
 
 	const config = vscode.workspace.getConfiguration('spool');
-	const serverPath = config.get<string>('serverPath', 'spool');
+	let serverPath = config.get<string>('serverPath', '');
+
+	// Use bundled binary if no custom path is configured.
+	if (!serverPath) {
+		const ext = process.platform === 'win32' ? '.exe' : '';
+		serverPath = path.join(context.extensionPath, 'dist', `spool${ext}`);
+	}
 	outputChannel.appendLine(`Server path: ${serverPath}`);
 
 	const serverOptions: ServerOptions = {
@@ -39,6 +47,14 @@ export function activate(context: vscode.ExtensionContext): void {
 	vscode.window.createTreeView('spoolRequirements', { treeDataProvider: treeProvider });
 	context.subscriptions.push(
 		vscode.commands.registerCommand('spool.refreshTree', () => treeProvider.refresh()),
+		vscode.commands.registerCommand('spool.init', async () => {
+			const folders = vscode.workspace.workspaceFolders;
+			if (!folders || folders.length === 0) {
+				vscode.window.showErrorMessage('Open a folder before running Spool: Init.');
+				return;
+			}
+			await scaffoldProject(folders[0].uri.fsPath);
+		}),
 	);
 
 	client.start().then(
