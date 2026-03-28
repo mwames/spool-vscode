@@ -4,6 +4,7 @@ import {
 	LanguageClientOptions,
 	ServerOptions,
 } from 'vscode-languageclient/node';
+import { SpoolTreeDataProvider } from './treeView';
 
 let client: LanguageClient | undefined;
 
@@ -32,10 +33,27 @@ export function activate(context: vscode.ExtensionContext): void {
 	};
 
 	client = new LanguageClient('spool', 'Spool', serverOptions, clientOptions);
+
+	// Set up tree view — refresh after client starts and on every file save.
+	const treeProvider = new SpoolTreeDataProvider(client);
+	vscode.window.createTreeView('spoolRequirements', { treeDataProvider: treeProvider });
+	context.subscriptions.push(
+		vscode.commands.registerCommand('spool.refreshTree', () => treeProvider.refresh()),
+	);
+
 	client.start().then(
-		() => outputChannel.appendLine('Spool LSP client started'),
+		() => {
+			outputChannel.appendLine('Spool LSP client started');
+			treeProvider.refresh();
+		},
 		(err) => outputChannel.appendLine(`Spool LSP client failed: ${err}`),
 	);
+
+	// Auto-refresh tree when files are saved.
+	vscode.workspace.onDidSaveTextDocument(() => {
+		// Small delay to let the LSP server reindex first.
+		setTimeout(() => treeProvider.refresh(), 500);
+	}, null, context.subscriptions);
 
 	// Register commands used by code lens actions.
 	context.subscriptions.push(

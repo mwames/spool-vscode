@@ -21,6 +21,39 @@
         "*.req": "yaml"
       }
     },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "spool",
+          "title": "Spool",
+          "icon": "$(checklist)"
+        }
+      ]
+    },
+    "views": {
+      "spool": [
+        {
+          "id": "spoolRequirements",
+          "name": "Requirements"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "spool.refreshTree",
+        "title": "Spool: Refresh Requirements",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "spool.refreshTree",
+          "when": "view == spoolRequirements",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "Spool",
       "properties": {
@@ -41,6 +74,7 @@
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "@types/vscode": "^1.75.0",
     "@vscode/vsce": "^3.2.0",
     "typescript": "^5.7.0"
