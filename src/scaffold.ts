@@ -25,11 +25,9 @@ export async function scaffoldProject(rootPath: string): Promise<void> {
 	const spoolMd = path.join(rootPath, 'SPOOL.md');
 	fs.writeFileSync(spoolMd, SPOOL_MD);
 
-	// Open SPOOL.md in the editor
+	// Open SPOOL.md in the editor.
 	const doc = await vscode.workspace.openTextDocument(spoolMd);
 	await vscode.window.showTextDocument(doc);
-
-	vscode.window.showInformationMessage('Spool initialized. See SPOOL.md for the requirements format.');
 }
 
 async function detectTestPatterns(rootPath: string): Promise<string[]> {

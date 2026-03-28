@@ -126,10 +126,14 @@ export class SpoolTreeDataProvider implements vscode.TreeDataProvider<SpoolTreeI
 		if (this.cachedTree) return this.cachedTree;
 
 		try {
+			if (!this.client.isRunning()) {
+				await this.client.start();
+			}
 			const result = await this.client.sendRequest<TraceabilityTree>('spool/traceability');
 			this.cachedTree = result;
 			return result;
-		} catch {
+		} catch (err) {
+			console.error('[Spool] fetchTree failed:', err);
 			return undefined;
 		}
 	}

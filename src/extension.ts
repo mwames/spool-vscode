@@ -17,7 +17,6 @@ export function activate(context: vscode.ExtensionContext): void {
 	const config = vscode.workspace.getConfiguration('spool');
 	let serverPath = config.get<string>('serverPath', '');
 
-	// Use bundled binary if no custom path is configured.
 	if (!serverPath) {
 		const ext = process.platform === 'win32' ? '.exe' : '';
 		serverPath = path.join(context.extensionPath, 'dist', `spool${ext}`);
@@ -42,20 +41,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
 	client = new LanguageClient('spool', 'Spool', serverOptions, clientOptions);
 
-	// Set up tree view — refresh after client starts and on every file save.
 	const treeProvider = new SpoolTreeDataProvider(client);
 	vscode.window.createTreeView('spoolRequirements', { treeDataProvider: treeProvider });
-	context.subscriptions.push(
-		vscode.commands.registerCommand('spool.refreshTree', () => treeProvider.refresh()),
-		vscode.commands.registerCommand('spool.init', async () => {
-			const folders = vscode.workspace.workspaceFolders;
-			if (!folders || folders.length === 0) {
-				vscode.window.showErrorMessage('Open a folder before running Spool: Init.');
-				return;
-			}
-			await scaffoldProject(folders[0].uri.fsPath);
-		}),
-	);
 
 	client.start().then(
 		() => {
@@ -67,12 +54,30 @@ export function activate(context: vscode.ExtensionContext): void {
 
 	// Auto-refresh tree when files are saved.
 	vscode.workspace.onDidSaveTextDocument(() => {
-		// Small delay to let the LSP server reindex first.
 		setTimeout(() => treeProvider.refresh(), 500);
 	}, null, context.subscriptions);
 
-	// Register commands used by code lens actions.
+	// Register commands.
 	context.subscriptions.push(
+		vscode.commands.registerCommand('spool.refreshTree', () => treeProvider.refresh()),
+		vscode.commands.registerCommand('spool.init', async () => {
+			const folders = vscode.workspace.workspaceFolders;
+			if (!folders || folders.length === 0) {
+				vscode.window.showErrorMessage('Open a folder before running Spool: Init.');
+				return;
+			}
+			await scaffoldProject(folders[0].uri.fsPath);
+
+			// Force the LSP server to reindex by sending a didSave notification.
+			const spoolYamlUri = vscode.Uri.file(path.join(folders[0].uri.fsPath, '.spool.yaml'));
+			if (client && client.isRunning()) {
+				client.sendNotification('textDocument/didSave', {
+					textDocument: { uri: spoolYamlUri.toString() },
+				});
+				// Give the server time to reindex, then refresh tree.
+				setTimeout(() => treeProvider.refresh(), 1000);
+			}
+		}),
 		vscode.commands.registerCommand('spool.goToTests', async (...locations: { uri: string; line: number; funcName?: string; fileName?: string }[]) => {
 			if (locations.length === 0) return;
 
@@ -86,7 +91,6 @@ export function activate(context: vscode.ExtensionContext): void {
 				return;
 			}
 
-			// Multiple tests — show a quick pick.
 			const items = locations.map((loc) => ({
 				label: loc.funcName || 'Test',
 				description: loc.fileName || '',
@@ -109,15 +113,8 @@ export function activate(context: vscode.ExtensionContext): void {
 			editor.selection = new vscode.Selection(pos, pos);
 			editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
 		}),
+		{ dispose: () => { if (client) client.stop(); } },
 	);
-
-	context.subscriptions.push({
-		dispose: () => {
-			if (client) {
-				client.stop();
-			}
-		},
-	});
 }
 
 export function deactivate(): Thenable<void> | undefined {
