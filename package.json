@@ -1,0 +1,48 @@
+{
+  "name": "spool-vscode",
+  "displayName": "Spool",
+  "description": "Requirements traceability navigation for Spool projects",
+  "version": "0.1.0",
+  "publisher": "mwames",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "workspaceContains:.spool.yaml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configurationDefaults": {
+      "files.associations": {
+        "*.req": "yaml"
+      }
+    },
+    "configuration": {
+      "title": "Spool",
+      "properties": {
+        "spool.serverPath": {
+          "type": "string",
+          "default": "/home/matt/repos/Spool/spool",
+          "description": "Path to the spool binary"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^3.2.0",
+    "typescript": "^5.7.0"
+  }
+}

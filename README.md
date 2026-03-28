@@ -1,0 +1,1 @@
+# Spool for VS Code
