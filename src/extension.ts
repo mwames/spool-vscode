@@ -35,6 +35,7 @@ export function activate(context: vscode.ExtensionContext): void {
 			{ scheme: 'file', pattern: '**/*.test.{ts,js,tsx,jsx}' },
 			{ scheme: 'file', pattern: '**/*.spec.{ts,js,tsx,jsx}' },
 			{ scheme: 'file', pattern: '**/*.java' },
+			{ scheme: 'file', pattern: '**/*.rs' },
 		],
 		outputChannel,
 	};
@@ -66,7 +67,9 @@ export function activate(context: vscode.ExtensionContext): void {
 				vscode.window.showErrorMessage('Open a folder before running Spool: Init.');
 				return;
 			}
-			await scaffoldProject(folders[0].uri.fsPath);
+			if (!(await scaffoldProject(folders[0].uri.fsPath, serverPath))) {
+				return;
+			}
 
 			// Force the LSP server to reindex by sending a didSave notification.
 			const spoolYamlUri = vscode.Uri.file(path.join(folders[0].uri.fsPath, '.spool.yaml'));
