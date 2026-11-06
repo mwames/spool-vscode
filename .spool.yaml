@@ -1,0 +1,5 @@
+test_patterns:
+  - "src/**/*.test.ts"
+exclude_patterns:
+  - "**/node_modules"
+  - "**/out"

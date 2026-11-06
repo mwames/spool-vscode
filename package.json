@@ -76,6 +76,7 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "test": "tsc -p ./ && node --test \"out/**/*.test.js\"",
     "vscode:prepublish": "npm run compile && bash build.sh",
     "package": "vsce package",
     "package:linux-x64": "bash build.sh linux amd64 && vsce package --target linux-x64",

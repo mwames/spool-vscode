@@ -1,45 +1,43 @@
 import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
 
-// Types matching the Go server's TraceabilityTree response.
-interface TraceabilityTree {
-	features: TraceabilityFeature[];
+import {
+	ItemNode,
+	Icon,
+	Target,
+	TraceabilityFeature,
+	TraceabilityRequirement,
+	TraceabilityTree,
+	featureDescription,
+	itemDescription,
+	itemIcon,
+	itemLabel,
+	openTarget,
+	requirementChildren,
+	requirementDescription,
+	requirementIcon,
+	requirementLabel,
+} from './treeModel';
+
+type SpoolTreeItem = FeatureItem | RequirementItem | ItemNodeItem;
+
+function themeIcon(icon: Icon): vscode.ThemeIcon {
+	return new vscode.ThemeIcon(icon.id, icon.color ? new vscode.ThemeColor(icon.color) : undefined);
 }
 
-interface TraceabilityFeature {
-	name: string;
-	requirements: TraceabilityRequirement[];
+function openCommand(target: Target | undefined, title: string): vscode.Command | undefined {
+	if (!target) return undefined;
+	return {
+		command: 'spool.goToAC',
+		title,
+		arguments: [{ uri: vscode.Uri.file(target.file).toString(), line: target.line }],
+	};
 }
-
-interface TraceabilityRequirement {
-	id: string;
-	title: string;
-	status: string;
-	file: string;
-	line: number;
-	acs: TraceabilityAC[];
-}
-
-interface TraceabilityAC {
-	id: string;
-	title: string;
-	file: string;
-	line: number;
-	testCount: number;
-}
-
-type SpoolTreeItem = FeatureItem | RequirementItem | ACItem;
 
 class FeatureItem extends vscode.TreeItem {
 	constructor(public readonly feature: TraceabilityFeature) {
 		super(feature.name, vscode.TreeItemCollapsibleState.Collapsed);
-
-		const totalACs = feature.requirements.reduce((sum, r) => sum + r.acs.length, 0);
-		const testedACs = feature.requirements.reduce(
-			(sum, r) => sum + r.acs.filter((ac) => ac.testCount > 0).length,
-			0,
-		);
-		this.description = `${testedACs}/${totalACs} tested`;
+		this.description = featureDescription(feature);
 		this.iconPath = new vscode.ThemeIcon('folder');
 		this.contextValue = 'feature';
 	}
@@ -47,43 +45,21 @@ class FeatureItem extends vscode.TreeItem {
 
 class RequirementItem extends vscode.TreeItem {
 	constructor(public readonly requirement: TraceabilityRequirement) {
-		super(`${requirement.id}: ${requirement.title}`, vscode.TreeItemCollapsibleState.Collapsed);
-
-		const tested = requirement.acs.filter((ac) => ac.testCount > 0).length;
-		const total = requirement.acs.length;
-		this.description = requirement.status === 'active' ? `${tested}/${total} tested` : requirement.status;
-		this.iconPath = new vscode.ThemeIcon(requirement.status === 'active' ? 'checklist' : 'circle-slash');
+		super(requirementLabel(requirement), vscode.TreeItemCollapsibleState.Collapsed);
+		this.description = requirementDescription(requirement);
+		this.iconPath = themeIcon(requirementIcon(requirement));
 		this.contextValue = 'requirement';
-
-		if (requirement.file) {
-			this.command = {
-				command: 'spool.goToAC',
-				title: 'Open Requirement',
-				arguments: [{ uri: vscode.Uri.file(requirement.file).toString(), line: requirement.line - 1 }],
-			};
-		}
+		this.command = openCommand(openTarget(requirement), 'Open Requirement');
 	}
 }
 
-class ACItem extends vscode.TreeItem {
-	constructor(public readonly ac: TraceabilityAC) {
-		super(`${ac.id}: ${ac.title}`, vscode.TreeItemCollapsibleState.None);
-
-		const tested = ac.testCount > 0;
-		this.description = tested ? `${ac.testCount} test(s)` : 'untested';
-		this.iconPath = new vscode.ThemeIcon(
-			tested ? 'pass' : 'warning',
-			tested ? new vscode.ThemeColor('testing.iconPassed') : new vscode.ThemeColor('testing.iconFailed'),
-		);
-		this.contextValue = 'ac';
-
-		if (ac.file) {
-			this.command = {
-				command: 'spool.goToAC',
-				title: 'Open AC',
-				arguments: [{ uri: vscode.Uri.file(ac.file).toString(), line: ac.line - 1 }],
-			};
-		}
+class ItemNodeItem extends vscode.TreeItem {
+	constructor(public readonly item: ItemNode) {
+		super(itemLabel(item), vscode.TreeItemCollapsibleState.None);
+		this.description = itemDescription(item);
+		this.iconPath = themeIcon(itemIcon(item));
+		this.contextValue = item.kind;
+		this.command = openCommand(openTarget(item), item.kind === 'ac' ? 'Open AC' : 'Open Invariant');
 	}
 }
 
@@ -116,7 +92,7 @@ export class SpoolTreeDataProvider implements vscode.TreeDataProvider<SpoolTreeI
 		}
 
 		if (element instanceof RequirementItem) {
-			return element.requirement.acs.map((ac) => new ACItem(ac));
+			return requirementChildren(element.requirement).map((item) => new ItemNodeItem(item));
 		}
 
 		return [];
