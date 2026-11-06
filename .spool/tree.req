@@ -1,0 +1,92 @@
+# .spool/tree.req
+
+feature: TREE
+
+requirements:
+
+  - id: TREE-1
+    title: Invariants in the Requirements Tree
+    description: >
+      The Requirements view lists each requirement's invariants beside
+      its acceptance criteria, shows whether each one is tested, opens
+      its definition when clicked, and counts invariants in the
+      requirement's and feature's summaries.
+    status: active
+    deciders:
+      - Matt Ames
+    consulted: []
+    date: 2026-11-06
+    rationale: >
+      Spool tracks invariants like ACs (INVARIANT-1) and the language
+      server sends them in the spool/traceability tree (INVARIANT-2-7),
+      but the Requirements view only reads "acs", so invariants are
+      invisible in the sidebar and an untested one doesn't show up
+      where untested ACs do. Invariants are listed after the ACs, as in
+      the .req file, rather than under a group of their own, so the
+      tree keeps three levels. Summaries count them separately from
+      ACs, as Spool's reports do, so an existing project's view doesn't
+      change until it has invariants.
+    superseded_by:
+    out_of_scope:
+      - Grouping, filtering or sorting the tree
+      - Changes to the language server or its spool/traceability response
+      - Specifying the existing AC, requirement and feature behavior beyond
+        what invariants change
+      - Which requirements a feature's summary counts; it counts the same
+        ones it counts today
+    acceptance_criteria:
+
+      - id: TREE-1-1
+        title: Invariants Listed Under Their Requirement
+        description: >
+          Given a requirement with ACs and invariants in the
+          spool/traceability tree,
+          when the requirement is expanded,
+          then its children are its ACs followed by its invariants, each
+          in the order the tree lists them, and each invariant is
+          labeled "<ID>: <title>".
+
+      - id: TREE-1-2
+        title: Invariant Test Status
+        description: >
+          Given an invariant with a testCount,
+          when it is shown in the tree,
+          then it shows "<n> test(s)" when tested and "untested"
+          otherwise, with the same icons and colors an AC uses for each;
+          the -INV- in its label is what tells it apart from an AC.
+
+      - id: TREE-1-3
+        title: Invariant Opens Its Definition
+        description: >
+          Given an invariant with a file and a line,
+          when it is clicked in the tree,
+          then the .req file opens at the invariant's line.
+
+      - id: TREE-1-4
+        title: Requirement Summary Counts Invariants
+        description: >
+          Given an active requirement,
+          when it is shown in the tree,
+          then a requirement without invariants keeps today's
+          "<tested>/<total> tested" summary of its ACs, and one with
+          invariants also shows "<tested>/<total> invariants" for them;
+          a requirement that isn't active shows its status, as today.
+
+      - id: TREE-1-5
+        title: Feature Summary Counts Invariants
+        description: >
+          Given a feature,
+          when it is shown in the tree,
+          then a feature whose requirements have no invariants keeps
+          today's summary, and one with invariants also shows
+          "<tested>/<total> invariants" summed over the same
+          requirements its AC summary counts.
+
+      - id: TREE-1-6
+        title: Older Server Without Invariants
+        description: >
+          Given a spool/traceability tree whose requirements have no
+          "invariants" field, as an older Spool sends,
+          when the tree is shown,
+          then it shows the ACs and summaries as before, with no
+          invariants and no error.
