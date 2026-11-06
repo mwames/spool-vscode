@@ -60,13 +60,21 @@ export interface Target {
 	line: number;
 }
 
+// Appends the invariant count to an AC summary, only when there are invariants.
+function withInvariants(summary: string, invariants: TraceabilityInvariant[]): string {
+	if (invariants.length === 0) return summary;
+	const tested = invariants.filter((inv) => inv.testCount > 0).length;
+	return `${summary}, ${tested}/${invariants.length} invariants`;
+}
+
 export function featureDescription(feature: TraceabilityFeature): string {
 	const totalACs = feature.requirements.reduce((sum, r) => sum + r.acs.length, 0);
 	const testedACs = feature.requirements.reduce(
 		(sum, r) => sum + r.acs.filter((ac) => ac.testCount > 0).length,
 		0,
 	);
-	return `${testedACs}/${totalACs} tested`; // TREE-1-5: invariants not counted yet
+	const invariants = feature.requirements.flatMap((r) => r.invariants ?? []);
+	return withInvariants(`${testedACs}/${totalACs} tested`, invariants);
 }
 
 export function requirementLabel(requirement: TraceabilityRequirement): string {
@@ -76,7 +84,7 @@ export function requirementLabel(requirement: TraceabilityRequirement): string {
 export function requirementDescription(requirement: TraceabilityRequirement): string {
 	if (requirement.status !== 'active') return requirement.status;
 	const tested = requirement.acs.filter((ac) => ac.testCount > 0).length;
-	return `${tested}/${requirement.acs.length} tested`; // TREE-1-4: invariants not counted yet
+	return withInvariants(`${tested}/${requirement.acs.length} tested`, requirement.invariants ?? []);
 }
 
 export function requirementIcon(requirement: TraceabilityRequirement): Icon {
@@ -84,7 +92,10 @@ export function requirementIcon(requirement: TraceabilityRequirement): Icon {
 }
 
 export function requirementChildren(requirement: TraceabilityRequirement): ItemNode[] {
-	return requirement.acs.map((ac) => ({ kind: 'ac', ...ac })); // TREE-1-1: invariants not listed yet
+	return [
+		...requirement.acs.map((ac): ItemNode => ({ kind: 'ac', ...ac })),
+		...(requirement.invariants ?? []).map((inv): ItemNode => ({ kind: 'invariant', ...inv })),
+	];
 }
 
 export function itemLabel(item: ItemNode): string {
